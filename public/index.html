@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Swaggerific</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/swaggerific.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <ul class="nav nav-pills pull-right">
+          <li><a href="/">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+        <h3 class="text-muted">blinkbox Books Labs</h3>
+      </div>
+
+      <div class="jumbotron">
+        <h1>Swaggerific</h1>
+        <p class="lead">Create a working stub RESTful api from your Swagger 2.0 docs.</p>
+        <p><a class="btn btn-lg btn-success" href="#upload-section" role="button">Try it out</a></p>
+      </div>
+
+      <div class="row marketing">
+        <div class="col-xs-12">
+          <h3 id="upload-section">Create a service stub</h3>
+          <form id="upload" method="post" enctype="multipart/form-data" action="/swag" role="form" class="well">
+            <div class="alert alert-warning" role="alert" id="uploadFailResult" style="display:none">
+              <h4>Could not create stub service</h4>
+              <p class="reason"></p>
+            </div>
+            <div class="alert alert-success" role="alert" id="uploadSuccessResult" style="display:none">
+              <h4>Stub service created!</h4>
+              <p>You can use it at <a href="#" target="_blank"></a>.</p>
+              <p>At that subdomain the <code>X-Swaggerific-Hash</code> header will be <strong class="hash"></strong> until this stub is changed</p>
+            </div>
+            <div class="form-group has-feedback" id="subdomainFeedback">
+              <label class="control-label" for="subdomain">What subdomain?</label>
+              <div class="input-group">
+                <input name="subdomain" type="text" class="form-control" id="subdomain" placeholder="subdomain">
+                <div rel="subdomain" class="input-group-addon">.example.com</div>
+              </div>
+              
+            </div>
+            <div class="form-group has-feedback" id="specFeedback">
+              <label class="control-label" for="spec">Upload your Swagger 2.0 documentation</label>
+              <input type="file" id="spec" name="spec">
+              <span class="glyphicon form-control-feedback"></span>
+              <p class="help-block warning" style="display:none">This file doesn't end in <code>.yaml</code> or <code>.yml</code>. It may not be Swagger 2.0 documentation.</p>
+              <p class="help-block error" style="display:none">You must upload a Swagger 2.0 doc to stub.</p>
+              <p class="help-block">See the <a href="https://github.com/wordnik/swagger-spec/blob/master/versions/2.0.md">Swagger 2.0 specification</a> for help on building your docs.</p>
+            </div>
+            <button type="submit" id="submit" class="btn btn-default">Generate Stub Service</button>
+          </form>
+        </div>
+        <div class="col-xs-12">
+          <h3 id="about">What strange new magic is this?</h3>
+          <p>Documenting RESTful APIs can be a pain, the folks at <a href="http://swagger.io/">Swagger</a> have built a really great framework for defining &amp; documenting them. You've put lots of effort into documenting, why not have the documentation work for you?</p>
+          <p>Swaggerific uses the examples and schema in Swagger 2.0 docs to generate a stub RESTful API that conforms <em>precisely</em> to the specification. It will send an example according to:</p>
+          <ul>
+            <li>The HTTP method (<code>GET</code>, <code>POST</code>, <code>PUT</code> etc)</li>
+            <li>The request path (it also copes with in-path substitutions like Swagger's <code>/books/{isbn}</code>)</li>
+            <li>The requested response status code (as there's no logic in the stub, you will have to specify this with the <code>X-Swaggerific-Respond-With</code> header)</li>
+            <li>The validity of the given parameters (in the path, the query, form data, or the headers)</li>
+            <li>The inbound <code>Content-Type</code> (as defined by the spec's <code>consumes</code> key)</li>
+            <li>The inbound <code>Accept</code> header (an example with a content type matching the first matching content-type will be used)</li>
+          </ul>
+          <p>If no example can be found then Swaggerific will try and generate something that matches the schema given for the matching endpoint.</p>
+          <p>You can have a look at the <a href="/swag/meta" target="_blank">Swagger docs for Swaggerific</a> if you want to get a feel for how it all works or <a href="//meta" rel="subdomain" target="_blank">have a play with it's own stub</a>. How very meta.</p>
+        </div>
+        <div class="col-xs-12">
+          <h3 id="contact">Get in touch</h3>
+          <p>I am <a href="http://twitter.com/jphastings">@jphastings</a> do send a tweet if you want to chat!</p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>blinkbox Books 2014, under the MIT license.</p>
+      </div>
+    </div>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/swaggerific.js"></script>
+  </body>
+</html>
