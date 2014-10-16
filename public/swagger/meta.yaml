@@ -1,0 +1,96 @@
+---
+swagger: 2.0
+info:
+  title: Swaggerific API
+  description: A service for automatically creating stubs of services using Swagger 2.0 documentation.
+  version: 0.1.0
+paths:
+  /:
+    get:
+      description: Introductary homepage
+      responses:
+        200:
+          examples:
+            text/html:
+              <html>
+                <body>
+                  <p>This is a stub of the Swaggerific homepage.</p>
+                </body>
+              </html>
+  /swag:
+    post:
+      description: Upload a new swagger file for stubbing
+      consumes: multipart/form-data
+      parameters:
+        - in: formData
+          name: subdomain
+          description: The subdomain desired for this mock. NB. this will overwrite an existing one of the same name.
+          required: true
+        - in: formData
+          name: file
+          type: file
+          description: The content of the swagger file
+          required: true
+      responses:
+        200:
+          description: Swagger file sucessfully uploaded
+          schema:
+            type: object
+            required:
+              - serverUrl
+              - hash
+            properties:
+              stubUrl:
+                title: The URL where the newly created stub can be accessed
+                type: string
+                format: uri
+              hash:
+                title: |
+                  A hash generated from the uploaded document. All requests to the stub
+                  generated with this upload will have the `X-Swaggerific-Hash` response
+                  header set to this value. This is useful for detecting if your stub
+                  is what you expect it to be.
+                type: string
+                format: "^[0-9a-f]{8}$"
+          examples:
+            application/json:
+              {
+                "stubUrl": "http://%{name}.example.com",
+                "hash": "2385B3CF"
+              }
+        400:
+          description: An invalid subdomain was given for the upload
+          examples:
+            application/json:
+              {
+                "error": "invalid_subdomain",
+                "message": "The subdomain specified (%{subdomain}) was not valid"
+              }
+        415:
+          description: The uploaded file was not Swagger 2.0 documentation
+          examples:
+            application/json:
+              {
+                "error": "invalid_swagger",
+                "message": "The file uploaded was not Swagger 2.0 documentation"
+              }
+  /swag/{name}:
+    get:
+      description: Returns the swagger file previously uploaded under the given name
+      responses:
+        200:
+          description: The swagger file specified
+          examples:
+            application/x-yaml:
+              swagger: 2.0
+              info:
+                title: A swagger document for a service which does nothing
+                version: 1.0.0
+        404:
+          description: No swagger file of this name has been uploaded
+          examples:
+            application/json:
+              {
+                "error": "missing_swagger",
+                "message": "No swagger file uploaded with the name '%{name}' could be found"
+              }
