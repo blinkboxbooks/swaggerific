@@ -2,7 +2,7 @@
 
 A webservice which creates web service stubs from Swagger 2.0 documentation.
 
-[Swaggerific](http://www.urbandictionary.com/define.php?term=Swaggerific&defid=5908632) (a): Having Swagger that exceeds the limit of 9000. Not commonly found.
+> [Swaggerific](http://www.urbandictionary.com/define.php?term=Swaggerific&defid=5908632) (a): Having Swagger that exceeds the limit of 9000. Not commonly found.
 
 ## About
 
@@ -42,3 +42,12 @@ heroku config:set SWAGGERIFIC_TLD_LEVEL=3
 git push heroku master
 # Now ensure swaggerific.example.com and *.swaggerific.example.com have CNAME DNS entries pointing to your heroku app.
 ```
+
+## TODO
+
+So far this is the product of a night's furious "oh damn, this would be so useful". The things I want to tackle now this is available to yous all:
+
+* This *really* needs some tests.
+* Swaggerific doesn't support URLs with GET parameters yet.
+* Integration with the Swagger editor so you can poke around an API would be fantastic.
+* An automated example generator from the schema definition.
