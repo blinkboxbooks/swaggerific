@@ -5,6 +5,7 @@ require "digest/sha1"
 require "blinkbox/swaggerific/version"
 require "blinkbox/swaggerific/helpers"
 require "blinkbox/swaggerific/parameters"
+require "blinkbox/swaggerific/schema_exampler"
 require "blinkbox/swaggerific/uploader_service"
 
 module Blinkbox
@@ -26,6 +27,9 @@ module Blinkbox
             @@instances[file].send(:initialize_from_swagger, File.expand_path(file))
           end
           @@instances[file]
+        rescue
+          @@instances.delete(file)
+          raise "No such file or subdomain"
         end
 
         def tld_level=(number)
@@ -78,12 +82,12 @@ module Blinkbox
       def response(env)
         return @canned_response if @canned_response
         catch :halt do
-          matching_paths = matching_paths(env['REQUEST_PATH'], env['REQUEST_METHOD'].downcase)
+          matching_paths = matching_paths(env)
           case matching_paths.size
           when 0
             halt(404)
           when 1
-            process_path(matching_paths.first[:spec], matching_paths.first[:params], env)
+            process_path(env, matching_paths.first)
           else
             halt(500, {
               "error" => "route_uncertainty",
@@ -98,7 +102,7 @@ module Blinkbox
 
       private
 
-      def process_path(spec, path_params, env)
+      def process_path(env, spec: {}, path_params: {}, query_params: {})
         requested_status_code = determine_requested_status_code(env)
         route = spec['responses'][requested_status_code]
         halt(404, {
@@ -114,6 +118,7 @@ module Blinkbox
           spec['parameters'] || {},
           path: path_params,
           env: env,
+          query: query_params,
           header: Hash[env.map { |key, value|
             if (key =~ /^HTTP_(.+)$/)
               [Regexp.last_match[1].downcase.tr("_", "-"), value]
@@ -122,19 +127,23 @@ module Blinkbox
         )
 
         example_content_types = route['examples'].keys rescue []
-        content_type = best_mime_type(example_content_types, env['HTTP_ACCEPT'])
-        halt(501, {
-          "error" => "no_example",
-          "message" => "The Swagger docs don't specify a suitable example for this route",
-          "details" => {
-            "routeDescription" => route['description'] || ""
-          }
-        }.to_json) if content_type.nil?
-        halt(406, {
-          "error" => "unmatchable_accept",
-          "message" => "The stub has no examples for the content types specified in the request's Accept header"
-        }.to_json) if content_type.nil?
-        example = route['examples'][content_type]
+        generatable_examples = route['schema'] ? ["application/json"] : []
+        content_type = best_mime_type(example_content_types + generatable_examples, env['HTTP_ACCEPT'])
+
+        if example_content_types.include?(content_type)
+          example = route['examples'][content_type]
+        elsif !generatable_examples.empty?
+          schema_exampler = SchemaExampler.new(route['schema'], @spec['definitions'] || {}, additional_properties: 1)
+          example = schema_exampler.gen.to_json
+        else
+          halt(501, {
+            "error" => "no_example",
+            "message" => "The Swagger docs don't specify a suitable example for this route",
+            "details" => {
+              "routeDescription" => route['description'] || ""
+            }
+          }.to_json)
+        end
         
         if !example.is_a?(String)
           logger.warn "The example given is not a string, the Swagger documentation is probably incorrect."
@@ -157,18 +166,37 @@ module Blinkbox
         requested_status_code
       end
 
-      def matching_paths(path, method, content_type = "*/*")
+      def matching_paths(env)
+        path = env['REQUEST_PATH']
+        method = env['REQUEST_METHOD'].downcase
+        get_params = required_get_params = Rack::Utils.parse_nested_query(env['QUERY_STRING'] || "")
         # TODO: Only match routes which have the correct "consumes" value
-        matching_paths = @spec['paths'].keys.map { |spec_path|
-          spec_path_re = spec_path.gsub(/\{([^}]+)\}/, "(?<\\1>.+?)")
-          matches = Regexp.new("^#{spec_path_re}$").match(path)
+        matching_paths = @spec['paths'].keys.map { |spec_full_path|
+          spec_path, spec_query_string = spec_full_path.split("?", 2)
+          matches = match_string(spec_path, path)
           next if matches.nil?
-          next if @spec['paths'][spec_path][method].nil?
+          next if @spec['paths'][spec_full_path][method].nil?
+          required_get_params = Rack::Utils.parse_nested_query(spec_query_string || "")
+          next unless (required_get_params.keys - get_params.keys).empty?
+          from_path = matches
+          from_query = required_get_params.inject({}) do |params, required|
+            params.merge!(match_string(required.last, get_params[required.first]))
+          end
           {
-            spec: @spec['paths'][spec_path][method],
-            params: Hash[matches.names.zip(matches.captures)]
+            spec: @spec['paths'][spec_full_path][method],
+            path_params: from_path,
+            query_params: from_query
           }
         }.compact
+      end
+
+      def match_string(bracketed_string, match_string, uri_decode: true)
+        re = bracketed_string.gsub(/\{([^}]+)\}/, "(?<\\1>.+?)")
+        matches = Regexp.new("^#{re}$").match(match_string)
+        return nil if matches.nil?
+        captures = matches.captures
+        captures.map! { |capture| URI.unescape(capture) } if uri_decode
+        Hash[matches.names.zip(captures)]
       end
 
       def initialize_from_swagger(filename)
