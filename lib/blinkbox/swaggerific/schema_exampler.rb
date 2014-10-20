@@ -25,7 +25,7 @@ module Blinkbox
       private
 
       def process_schema(obj)
-        raise "Not a schema object" unless obj.is_a?(Hash)
+        raise "Not a schema object #{obj.inspect}" unless obj.is_a?(Hash)
         return process_schema(get_definition(obj["$ref"])) if obj["$ref"]
         # object is the default??
         type = obj["type"] || (obj.has_key?("enum") ? "enum" : "object")
@@ -46,7 +46,7 @@ module Blinkbox
         }.compact]
       end
 
-      def gen_null(obj)
+      def gen_null(obj = {})
         nil
       end
 
@@ -54,11 +54,11 @@ module Blinkbox
         obj["enum"].sample
       end
 
-      def gen_boolean(obj)
+      def gen_boolean(obj = {})
         [true, false].sample
       end
 
-      def gen_array(obj)
+      def gen_array(obj = {})
         min_count = obj["minItems"] || 2
         max_count = obj["maxItems"] || 5
         count = Random.rand(max_count - min_count + 1) + min_count
@@ -67,18 +67,20 @@ module Blinkbox
         end
       end
 
-      def gen_integer(obj)
-        Random.rand((obj[:max] || 1000).to_i)
+      def gen_integer(obj = {})
+        min = obj["minimum"] || 10
+        max = obj["maximum"] || 1000
+        Random.rand(max - min + 1) + min
       end
 
-      def gen_number(obj)
-        min = obj["minimum"] || 0
+      def gen_number(obj = {})
+        min = obj["minimum"] || 10
         max = obj["maximum"] || 1000
         # TODO: exclusive minimum/maximum
-        Random.rand(max - min + 1) + min_length
+        Random.rand * (max - min) + min
       end
 
-      def gen_string(obj)
+      def gen_string(obj = {})
         case obj["format"]
         when "date-time"
           Time.at(Random.rand(Time.now.to_i)).utc.iso8601

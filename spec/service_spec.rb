@@ -55,7 +55,7 @@ context Blinkbox::Swaggerific::Service do
       get "/", {}, { "HTTP_ACCEPT" => "application/json" }
       expect(last_response.status).to eq(200)
       response_json = JSON.parse(last_response.body)
-      expect { JSON::Validator.validate(schema, response_json) }.to_not raise_error
+      expect { JSON::Validator.validate!(schema, response_json) }.to_not raise_error
     end
 
     it "must return 501 with no_example if there is no example or schema" do
