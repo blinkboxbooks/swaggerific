@@ -82,14 +82,22 @@ paths:
       description: Returns the swagger file previously uploaded under the given name
       responses:
         200:
-          description: The swagger file specified
+          description: The swagger file specified. Will also convert the Swagger YAML into JSON if the Accept header is set accordingly.
           examples:
             application/x-yaml: |
               ---
-              swagger: 2.0
+              swagger: "2.0"
               info:
                 title: A swagger document for a service which does nothing (sitting on the %{name} subdomain)
                 version: 1.0.0
+            application/json: |
+              {
+                "swagger": "2.0",
+                "info": {
+                  "title": "A swagger document for a service which does nothing (sitting on the %{name} subdomain)",
+                  "version": "1.0.0"
+                }
+              }
         404:
           description: No swagger file of this name has been uploaded
           examples:
