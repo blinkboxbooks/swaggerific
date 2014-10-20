@@ -74,11 +74,11 @@
           <p>Swaggerific uses the examples and schema in Swagger 2.0 docs to generate a stub RESTful API that conforms <em>precisely</em> to the specification. It will send an example according to:</p>
           <ul>
             <li>The HTTP method (<code>GET</code>, <code>POST</code>, <code>PUT</code> etc)</li>
-            <li>The request path (it also copes with in-path substitutions like Swagger's <code>/books/{isbn}</code>)</li>
+            <li>The request path and query parameters (it also copes with in-path substitutions like Swagger's <code>/books/{isbn}?extra={extra}</code>)</li>
             <li>The requested response status code (as there's no logic in the stub, you will have to specify this with the <code>X-Swaggerific-Respond-With</code> header)</li>
             <li>The validity of the given parameters (in the path, the query, form data, or the headers)</li>
             <li>The inbound <code>Content-Type</code> (as defined by the spec's <code>consumes</code> key)</li>
-            <li>The inbound <code>Accept</code> header (an example with a content type matching the first matching content-type will be used)</li>
+            <li>The inbound <code>Accept</code> header (the example with a content type matching the most desired content-type in the header will be returned)</li>
           </ul>
           <p>If no example can be found then Swaggerific will try and generate something that matches the schema given for the matching endpoint.</p>
           <p>You can have a look at the <a href="/swag/meta" target="_blank">Swagger docs for Swaggerific</a> if you want to get a feel for how it all works or <a href="//meta" rel="subdomain" target="_blank">have a play with it's own stub</a>. How very meta.</p>

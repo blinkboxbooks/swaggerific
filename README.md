@@ -47,7 +47,5 @@ git push heroku master
 
 So far this is the product of a night's furious "oh damn, this would be so useful". The things I want to tackle now this is available to yous all:
 
-* This *really* needs some tests.
-* Swaggerific doesn't support URLs with GET parameters yet.
+* It needs some more tests.
 * Integration with the Swagger editor so you can poke around an API would be fantastic.
-* An automated example generator from the schema definition.
