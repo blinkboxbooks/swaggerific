@@ -14,7 +14,7 @@ module Blinkbox
 
       def best_mime_type(given_mime_types, accept_list = [])
         accept_list = parse_accept_header(accept_list) if accept_list.is_a?(String)
-        accept_list.each do |accepted|
+        (accept_list || ["*/*"]).each do |accepted|
           accepted_re = Regexp.new('^' + Regexp.escape(accepted).gsub('\*', '.+') + '$')
           chosen = given_mime_types.select { |m| accepted_re.match(m) }.first
           return chosen if !chosen.nil?

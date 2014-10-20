@@ -1,0 +1,3 @@
+--no-color
+--require spec_helper
+-cfd

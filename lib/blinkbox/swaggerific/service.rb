@@ -167,18 +167,17 @@ module Blinkbox
       end
 
       def matching_paths(env)
-        path = env['REQUEST_PATH']
+        path = env['PATH_INFO']
         method = env['REQUEST_METHOD'].downcase
         get_params = required_get_params = Rack::Utils.parse_nested_query(env['QUERY_STRING'] || "")
         # TODO: Only match routes which have the correct "consumes" value
         matching_paths = @spec['paths'].keys.map { |spec_full_path|
           spec_path, spec_query_string = spec_full_path.split("?", 2)
-          matches = match_string(spec_path, path)
-          next if matches.nil?
+          from_path = match_string(spec_path, path)
+          next if from_path.nil?
           next if @spec['paths'][spec_full_path][method].nil?
           required_get_params = Rack::Utils.parse_nested_query(spec_query_string || "")
           next unless (required_get_params.keys - get_params.keys).empty?
-          from_path = matches
           from_query = required_get_params.inject({}) do |params, required|
             params.merge!(match_string(required.last, get_params[required.first]))
           end
