@@ -14,15 +14,16 @@ module Helpers
     Blinkbox::Swaggerific::Service.swagger_store = yaml_file.path
   end
 
-  def pathdef_for(path, method: "get", status: 200, content_type: "application/json", body: { "path" => path }.to_json, schema: nil)
+  def pathdef_for(path, method: "get", status: 200, content_type: "application/json", body: { "path" => path }.to_json, schema: nil, params: [])
     route = {}
+    route.deep_merge!("params" => params) if params.any?
     route.deep_merge!("examples" => { content_type => body }) unless body.nil?
     route.deep_merge!("schema" => schema) unless schema.nil?
-    { path => { method => { "responses" => { status => route } } } }
+    { "paths" => { path => { method => { "responses" => { status => route } } } } }
   end
 
   def swaggerise(*pathdefs)
-    YAML.dump("paths" => pathdefs.inject({}) { |paths, pathdef| paths.deep_merge(pathdef) })
+    YAML.dump(pathdefs.inject({}) { |paths, pathdef| paths.deep_merge(pathdef) })
   end
 
   def app
