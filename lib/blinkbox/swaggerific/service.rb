@@ -105,6 +105,17 @@ module Blinkbox
       def process_path(env, spec: {}, path_params: {}, query_params: {})
         requested_status_code = determine_requested_status_code(env)
         route = spec['responses'][requested_status_code]
+        specified_headers = route['headers'] || {}
+        if spec["deprecated"]
+          specified_headers["X-Swaggerific-Deprecated-Endpoint"] = "true"
+          halt(405,
+            {
+              "error" => "deprecated_endpoint",
+              "message" => "This endpoint has been flagged as deprecated. Please set the X-Swaggerific-Deprecated-Endpoints header to `allow` if you still want to use it, but avoid doing so if possible."
+            }.to_json,
+            specified_headers
+          ) unless env["HTTP_X_SWAGGERIFIC_DEPRECATED_ENDPOINTS"] == "allow"
+        end
         halt(404, {
           "error" => "no_route",
           "message" => "This route is not defined in the Swagger doc"
@@ -153,7 +164,7 @@ module Blinkbox
         # Attempt to substitue params into the example, but fallback on the original
         example = example % params.all rescue example
 
-        specified_headers = (route['headers'] || {}).merge("Content-Type" => content_type)
+        specified_headers.merge!("Content-Type" => content_type)
         halt(requested_status_code, example, specified_headers)
       end
 
@@ -169,20 +180,26 @@ module Blinkbox
       def matching_paths(env)
         path = env['PATH_INFO']
         method = env['REQUEST_METHOD'].downcase
-        get_params = required_get_params = Rack::Utils.parse_nested_query(env['QUERY_STRING'] || "")
+        given_query_params = Rack::Utils.parse_nested_query(env['QUERY_STRING'] || "")
         # TODO: Only match routes which have the correct "consumes" value
-        matching_paths = @spec['paths'].keys.map { |spec_full_path|
+        matching_paths = (@spec['paths'] || {}).keys.map { |spec_full_path|
           spec_path, spec_query_string = spec_full_path.split("?", 2)
           from_path = match_string(spec_path, path)
           next if from_path.nil?
-          next if @spec['paths'][spec_full_path][method].nil?
-          required_get_params = Rack::Utils.parse_nested_query(spec_query_string || "")
-          next unless (required_get_params.keys - get_params.keys).empty?
-          from_query = required_get_params.inject({}) do |params, required|
-            params.merge!(match_string(required.last, get_params[required.first]))
+          operation = @spec['paths'][spec_full_path][method]
+          next if operation.nil?
+          from_query = (operation["parameters"] || []).inject({}) do |accumulator, param|
+            if param["in"] == "query"
+              value = given_query_params[param["name"]] || param["default"]
+              accumulator.merge!(param["name"] => value) unless value.nil?
+            end
           end
+          required_get_params = (operation["parameters"] || []).map { |param|
+            param["name"] if param["in"] == "query" && param["required"] == true
+          }.compact
+          next unless (required_get_params - from_query.keys).empty?
           {
-            spec: @spec['paths'][spec_full_path][method],
+            spec: operation,
             path_params: from_path,
             query_params: from_query
           }
