@@ -6,5 +6,7 @@ rvm:
 deploy:
   provider: heroku
   app: swaggerific
+  on:
+    rvm: 2.1.2
   api_key:
     secure: diJzy7GXZHID8IggqfXPaILaGQpY+zr3wrGPlqX9+Ky+/OyhCGL2WBqrO89C8xMypcN7v1mzqloEnEVfIE0FKUSZkxqrslm/2kFSgxJAjC4SXOGmZnGC+RDMGSN6XOk/T39jJifn0UVCpDEGod3LHf1HPcIZOyESWDzT3Bgtx+A=
