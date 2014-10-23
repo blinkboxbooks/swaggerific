@@ -6,6 +6,26 @@ context Blinkbox::Swaggerific::Service do
       expect(last_response.status).to eq(404)
     end
 
+    describe "with deprecated endpoints" do
+      it "must respond with a 405 without X-Swaggerific-Deprecated-Endpoints set" do
+        stub_swagger(swaggerise(pathdef_for("/", deprecated: true)))
+        get "/"
+        expect(last_response.status).to eq(405)
+        response_json = JSON.parse(last_response.body)
+        expect(response_json["error"]).to eq("deprecated_endpoint")
+        expect(last_response.headers["X-Swaggerific-Deprecated-Endpoint"]).to eq("true")
+      end
+
+      it "must respond normally with X-Swaggerific-Deprecated-Endpoints set to allow" do
+        body = "abc123"
+        stub_swagger(swaggerise(pathdef_for("/", deprecated: true, body: body)))
+        get "/", {}, { "HTTP_X_SWAGGERIFIC_DEPRECATED_ENDPOINTS" => "allow" }
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).to eq(body)
+        expect(last_response.headers["X-Swaggerific-Deprecated-Endpoint"]).to eq("true")
+      end
+    end
+
     describe "with static paths" do
       it "must respond with the example if there is one matching route" do
         [200, 201, 303, 400, 401, 403, 500, 503].each do |status|
@@ -158,7 +178,7 @@ context Blinkbox::Swaggerific::Service do
         query_params = { "param" => "value" }
         get "/", query_params
         expect(last_response.status).to eq(200)
-        expect(JSON.parse(last_response.body)).to not_eq(query_params)
+        expect(JSON.parse(last_response.body)).to_not eq(query_params)
       end
     end
   end
