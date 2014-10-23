@@ -164,7 +164,7 @@ module Blinkbox
         # Attempt to substitue params into the example, but fallback on the original
         example = example % params.all rescue example
 
-        specified_headers.merge("Content-Type" => content_type)
+        specified_headers.merge!("Content-Type" => content_type)
         halt(requested_status_code, example, specified_headers)
       end
 
