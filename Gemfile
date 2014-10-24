@@ -1,8 +1,8 @@
 source "https://rubygems.org"
 
 gem "rack"
-gem "thin"
 gem "json-schema"
+gem "puma"
 
 group :test do
   gem "rake"
