@@ -193,6 +193,7 @@ module Blinkbox
               value = given_query_params[param["name"]] || param["default"]
               accumulator.merge!(param["name"] => value) unless value.nil?
             end
+            accumulator
           end
           required_get_params = (operation["parameters"] || []).map { |param|
             param["name"] if param["in"] == "query" && param["required"] == true
