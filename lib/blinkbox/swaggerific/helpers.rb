@@ -25,6 +25,7 @@ module Blinkbox
       def headers(headers = {})
         {
           "X-Swaggerific-Version" => VERSION,
+          "Access-Control-Allow-Origin" => "*",
           "Content-Type" => "application/json" # the default content type
         }.merge(headers)
       end

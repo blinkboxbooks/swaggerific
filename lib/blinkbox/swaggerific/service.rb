@@ -98,6 +98,9 @@ module Blinkbox
             }.to_json)
           end
         end
+      rescue => e
+        logger.fatal(e)
+        [500, {}, []]
       end
 
       private
@@ -145,8 +148,10 @@ module Blinkbox
           example = route['examples'][content_type]
         elsif !generatable_examples.empty?
           schema_exampler = SchemaExampler.new(route['schema'], @spec['definitions'] || {}, additional_properties: 1)
-          example = schema_exampler.gen.to_json
-        else
+          example = schema_exampler.gen.to_json rescue nil
+        end
+
+        if example.nil?
           halt(501, {
             "error" => "no_example",
             "message" => "The Swagger docs don't specify a suitable example for this route",

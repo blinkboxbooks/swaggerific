@@ -36,7 +36,14 @@ module Blinkbox
 
       def get_definition(name)
         return @extra_definitions[name] if @extra_definitions[name]
-        raise NotImplementedError, "Use JSON path to pull out schema"
+        if name.match(%r{^#/definitions/(.+)$})
+          value = @extra_definitions.dup
+          Regexp.last_match[1].split("/").each { |key| value = value[key] }
+          return value
+        end
+        raise "Unknown definition"
+      rescue
+        raise "Cannot find definition #{name}"
       end
 
       def gen_object(obj)
