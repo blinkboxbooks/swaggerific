@@ -25,8 +25,8 @@ module Blinkbox
               ) if env['REQUEST_PATH'] =~ %r{^/swag/}
               send_file(
                 Regexp.last_match[1],
-                root: "swagger-ui/dist"
-              ) if env['REQUEST_PATH'] =~ %r{^/swagger-ui(/.*)$}
+                root: "editor"
+              ) if env['REQUEST_PATH'] =~ %r{^/editor(/.*)$}
               send_file(env['REQUEST_PATH'], accept: env['HTTP_ACCEPT'])
             when "post"
               halt(404) unless env['REQUEST_PATH'] == "/swag"
