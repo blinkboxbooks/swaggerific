@@ -36,7 +36,7 @@ context Blinkbox::Swaggerific::Service do
               pathdef_for("/", status: status, body: body)
             )
           )
-          get "/", {}, { "HTTP_X_SWAGGERIFIC_RESPOND_WITH" => status }
+          get "/", {}, { "HTTP_X_SWAGGERIFIC_RESPOND_WITH" => status.to_s }
           expect(last_response.body).to eq(body)
           expect(last_response.status).to eq(status)
         end

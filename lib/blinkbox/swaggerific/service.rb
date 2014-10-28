@@ -106,8 +106,8 @@ module Blinkbox
       private
 
       def process_path(env, operation: {}, path_params: {}, query_params: {})
-        requested_status_code = determine_requested_status_code(env)
-        route = operation['responses'][requested_status_code] || operation['responses'][requested_status_code.to_s]
+        status_code = determine_best_status_code(env, operation['responses'].keys)
+        route = operation['responses'][status_code]
         specified_headers = route['headers'] || {}
         if operation["deprecated"]
           specified_headers["X-Swaggerific-Deprecated-Endpoint"] = "true"
@@ -125,7 +125,11 @@ module Blinkbox
         }.to_json) if route.nil?
         halt(415, {
           "error" => "unnacceptable_content_type",
-          "message" => "The Content-Type given in the request cannot be dealt with by this endpoint"
+          "message" => "The Content-Type given in the request cannot be dealt with by this endpoint",
+          "details" => {
+            "delivered" => env['CONTENT_TYPE'].split(';').first,
+            "required" => operation['consumes']
+          }
         }.to_json) unless operation['consumes'].nil? || best_mime_type([env['CONTENT_TYPE'].split(';').first], operation['consumes'])
 
         params = Parameters.new(
@@ -148,7 +152,11 @@ module Blinkbox
           example = route['examples'][content_type]
         elsif !generatable_examples.empty?
           schema_exampler = SchemaExampler.new(route['schema'], @spec['definitions'] || {}, additional_properties: 1)
-          example = schema_exampler.gen.to_json rescue nil
+          begin
+            example = schema_exampler.gen.to_json
+          rescue => e
+            logger.debug(e)
+          end
         end
 
         if example.nil?
@@ -170,16 +178,22 @@ module Blinkbox
         example = example % params.all rescue example
 
         specified_headers.merge!("Content-Type" => content_type)
-        halt(requested_status_code, example, specified_headers)
+        halt(status_code, example, specified_headers)
       end
 
-      def determine_requested_status_code(env)
-        requested_status_code = (env['HTTP_X_SWAGGERIFIC_RESPOND_WITH'] || 200).to_i
+      def determine_best_status_code(env, availble_status_codes)
+        requested = env['HTTP_X_SWAGGERIFIC_RESPOND_WITH']
         halt(400, {
           "error" => "invalid_status_code_request",
           "message" => "The X-Swaggerific-Respond-With header must be an http status code"
-        }.to_json) if requested_status_code == 0
-        requested_status_code
+        }.to_json) unless requested.nil? || requested =~ /^([1-5]\d\d)?$/
+        matcher = requested || /^2\d\d$/
+        chosen = availble_status_codes.select { |code| code.to_s.match(matcher) }.first
+        halt(501, {
+          "error" => "no_route",
+          "message" => "The Swagger docs don't specify a response with a #{requested || "2xx"} status code"
+        }.to_json) if chosen.nil?
+        chosen
       end
 
       def matching_paths(env)
