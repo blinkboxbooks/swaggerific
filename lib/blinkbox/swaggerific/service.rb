@@ -102,11 +102,11 @@ module Blinkbox
 
       private
 
-      def process_path(env, spec: {}, path_params: {}, query_params: {})
+      def process_path(env, operation: {}, path_params: {}, query_params: {})
         requested_status_code = determine_requested_status_code(env)
-        route = spec['responses'][requested_status_code]
+        route = operation['responses'][requested_status_code] || operation['responses'][requested_status_code.to_s]
         specified_headers = route['headers'] || {}
-        if spec["deprecated"]
+        if operation["deprecated"]
           specified_headers["X-Swaggerific-Deprecated-Endpoint"] = "true"
           halt(405,
             {
@@ -123,10 +123,10 @@ module Blinkbox
         halt(415, {
           "error" => "unnacceptable_content_type",
           "message" => "The Content-Type given in the request cannot be dealt with by this endpoint"
-        }.to_json) unless spec['consumes'].nil? || best_mime_type([env['CONTENT_TYPE'].split(';').first], spec['consumes'])
+        }.to_json) unless operation['consumes'].nil? || best_mime_type([env['CONTENT_TYPE'].split(';').first], operation['consumes'])
 
         params = Parameters.new(
-          spec['parameters'] || {},
+          operation['parameters'] || {},
           path: path_params,
           env: env,
           query: query_params,
@@ -200,7 +200,7 @@ module Blinkbox
           }.compact
           next unless (required_get_params - from_query.keys).empty?
           {
-            spec: operation,
+            operation: operation,
             path_params: from_path,
             query_params: from_query
           }
