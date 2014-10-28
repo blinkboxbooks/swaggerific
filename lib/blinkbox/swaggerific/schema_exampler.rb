@@ -47,7 +47,7 @@ module Blinkbox
       end
 
       def gen_object(obj)
-        Hash[obj["properties"].map { |key, schema_object|
+        Hash[(obj["properties"] || {}).map { |key, schema_object|
           next nil if !(obj["required"] || []).include?(key) && (@additional_properties == 0 || Random.rand > @additional_properties)
           [key, process_schema(schema_object)]
         }.compact]
