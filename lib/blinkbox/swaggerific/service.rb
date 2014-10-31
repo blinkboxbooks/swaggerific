@@ -1,11 +1,11 @@
 require "yaml"
 require "json"
+require "genny"
 require "logger"
 require "digest/sha1"
 require "blinkbox/swaggerific/version"
 require "blinkbox/swaggerific/helpers"
 require "blinkbox/swaggerific/parameters"
-require "blinkbox/swaggerific/schema_exampler"
 require "blinkbox/swaggerific/uploader_service"
 
 module Blinkbox
@@ -151,12 +151,8 @@ module Blinkbox
         if example_content_types.include?(content_type)
           example = route['examples'][content_type]
         elsif !generatable_examples.empty?
-          schema_exampler = SchemaExampler.new(route['schema'], @spec['definitions'] || {}, additional_properties: 1)
-          begin
-            example = schema_exampler.gen.to_json
-          rescue => e
-            logger.debug(e)
-          end
+          (route['schema']['definitions'] ||= {}).merge!(@spec['definitions']) if @spec['definitions']
+          example = JSONSchema.new(route['schema']).genny.to_json
         end
 
         if example.nil?

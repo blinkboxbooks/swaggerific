@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+gem "genny", "~> 0.1"
+gem "faker"
 gem "rack"
 gem "json-schema"
 gem "puma"
