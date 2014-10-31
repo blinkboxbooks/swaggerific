@@ -16,20 +16,21 @@ module Blinkbox
 
         def call(env)
           catch :halt do
+            path = env['REQUEST_PATH'] || env['REQUEST_URI']
             case env['REQUEST_METHOD'].downcase
             when "get"
               send_file(
-                env['REQUEST_PATH'] + ".yaml",
+                "#{path}.yaml",
                 accept: env['HTTP_ACCEPT'],
                 headers: { "Access-Control-Allow-Origin" => "*" }
-              ) if env['REQUEST_PATH'] =~ %r{^/swag/}
+              ) if path =~ %r{^/swag/}
               send_file(
                 Regexp.last_match[1],
                 root: "editor"
-              ) if env['REQUEST_PATH'] =~ %r{^/editor(/.*)$}
-              send_file(env['REQUEST_PATH'], accept: env['HTTP_ACCEPT'])
+              ) if path =~ %r{^/editor(/.*)$}
+              send_file(path, accept: env['HTTP_ACCEPT'])
             when "post"
-              halt(404) unless env['REQUEST_PATH'] == "/swag"
+              halt(404) unless path == "/swag"
               spec = Service.new("meta").spec["paths"]["/swag"]["post"]
               params = Parameters.new(spec["parameters"], env: env).all
               halt(400, {
