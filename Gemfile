@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-gem "genny", "~> 0.1"
+gem "genny", "~> 0.2", ">= 0.2.2"
 gem "faker"
 gem "rack"
 gem "json-schema"
