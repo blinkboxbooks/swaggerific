@@ -1,5 +1,6 @@
 require "yaml"
 require "json"
+require "faker"
 require "genny"
 require "logger"
 require "digest/sha1"
@@ -112,6 +113,7 @@ module Blinkbox
       private
 
       def process_path(env, operation: {}, path_params: {}, query_params: {})
+        Faker::Config.locale = env['HTTP_ACCEPT_LANGUAGE'] if I18n.exists?(:faker, env['HTTP_ACCEPT_LANGUAGE'])
         status_code = determine_best_status_code(env, operation['responses'].keys)
         route = operation['responses'][status_code]
         specified_headers = route['headers'] || {}
