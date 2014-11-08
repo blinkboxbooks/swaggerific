@@ -4,7 +4,7 @@
     $('*[rel="subdomain"]:not(a)').text('.' + window.location.host);
     $('a[rel="subdomain"]').attr('href', '//meta.' + window.location.host);
     $('#subdomain').bind('input change', function() {
-      var invalid = !this.value.match(/^[a-z](?:[a-z-0-9]*[a-z0-9])?$/i) || this.value == 'meta';
+      var invalid = !this.value.match(/^[a-z](?:[a-z-0-9]*[a-z0-9])?$/i) || this.value === 'meta';
       $('#subdomainFeedback')
         .toggleClass('has-success', !invalid)
         .toggleClass('has-error', invalid);
@@ -26,15 +26,14 @@
       $('#upload').trigger('change');
     });
     $('#upload').bind('change', function() {
-      var formGood = $('#upload .form-group.has-feedback.has-success').length == 2;
+      var formGood = $('#upload .form-group.has-feedback.has-success').length === 2;
       $('#submit')
         .toggleClass('btn-success', formGood)
         .toggleClass('btn-default', !formGood)
         .toggleClass('disabled', !formGood);
-    });;
+    });
     $('#upload').bind('submit', function(e) {
       e.preventDefault();
-      console.log('action', $('#upload').attr('action'))
       $.ajax({
         url: $('#upload').attr('action'),
         type: $('#upload').attr('method'),
