@@ -1,0 +1,3 @@
+#! /bin/bash
+cd /srv/www/swaggerific
+foreman start -p 5000
