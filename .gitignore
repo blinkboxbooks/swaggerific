@@ -2,3 +2,4 @@ swagger-ui/
 ^swagger-ui/dist/
 public/swag/
 ^public/swag/meta.yaml
+.idea
