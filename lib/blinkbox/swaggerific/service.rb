@@ -116,30 +116,11 @@ module Blinkbox
         Faker::Config.locale = env['HTTP_ACCEPT_LANGUAGE'] if I18n.exists?(:faker, env['HTTP_ACCEPT_LANGUAGE'])
         status_code = determine_best_status_code(env, operation['responses'].keys)
         route = operation['responses'][status_code]
+        no_route! if route.nil?
         specified_headers = route['headers'] || {}
-        if operation["deprecated"]
-          specified_headers["X-Swaggerific-Deprecated-Endpoint"] = "true"
-          halt(405,
-            {
-              "error" => "deprecated_endpoint",
-              "message" => "This endpoint has been flagged as deprecated. Please set the X-Swaggerific-Deprecated-Endpoints header to `allow` if you still want to use it, but avoid doing so if possible."
-            }.to_json,
-            specified_headers
-          ) unless env["HTTP_X_SWAGGERIFIC_DEPRECATED_ENDPOINTS"] == "allow"
-        end
-        halt(404, {
-          "error" => "no_route",
-          "message" => "This route is not defined in the Swagger doc"
-        }.to_json) if route.nil?
-        halt(415, {
-          "error" => "unnacceptable_content_type",
-          "message" => "The Content-Type given in the request cannot be dealt with by this endpoint",
-          "details" => {
-            "delivered" => env['CONTENT_TYPE'].split(';').first,
-            "required" => operation['consumes']
-          }
-        }.to_json) unless operation['consumes'].nil? || best_mime_type([env['CONTENT_TYPE'].split(';').first], operation['consumes'])
-
+        check_deprecated!(env, operation, specified_headers)
+        check_content_type!(env, operation)
+        
         params = Parameters.new(
           operation['parameters'] || {},
           path: path_params,
@@ -152,37 +133,75 @@ module Blinkbox
           }.compact]
         )
 
-        example_content_types = route['examples'].keys rescue []
-        generatable_examples = route['schema'] ? ["application/json"] : []
-        content_type = best_mime_type(example_content_types + generatable_examples, env['HTTP_ACCEPT'])
-
-        if example_content_types.include?(content_type)
-          example = route['examples'][content_type]
-        elsif !generatable_examples.empty?
-          (route['schema']['definitions'] ||= {}).merge!(@spec['definitions']) if @spec['definitions']
-          example = JSONSchema.new(route['schema']).genny.to_json
-        end
-
-        if example.nil?
-          halt(501, {
-            "error" => "no_example",
-            "message" => "The Swagger docs don't specify a suitable example for this route",
-            "details" => {
-              "routeDescription" => route['description'] || ""
-            }
-          }.to_json)
-        end
-        
-        if !example.is_a?(String)
-          logger.warn "The example given is not a string, the Swagger documentation is probably incorrect."
-          example = example.to_s
-        end
-
+        content_type, example = create_example(env, route)
         # Attempt to substitue params into the example, but fallback on the original
         example = example % params.all rescue example
 
         specified_headers.merge!("Content-Type" => content_type)
         halt(status_code, example, specified_headers)
+      end
+
+      def create_example(env, route)
+        example_content_types = route['examples'].keys rescue []
+        generatable_examples = route['schema'] ? ["application/json"] : []
+        content_type = best_mime_type(example_content_types + generatable_examples, env['HTTP_ACCEPT'])
+
+        example = route['examples'][content_type] if example_content_types.include?(content_type)
+          
+        if !generatable_examples.empty?
+          (route['schema']['definitions'] ||= {}).merge!(@spec['definitions']) if @spec['definitions']
+          example = JSONSchema.new(route['schema']).genny.to_json
+        end
+        
+        halt(501, {
+          "error" => "no_example",
+          "message" => "The Swagger docs don't specify a suitable example for this route",
+          "details" => {
+            "routeDescription" => route['description'] || ""
+          }
+        }.to_json) if example.nil?
+
+        if !example.is_a?(String)
+          logger.warn "The example given is not a string, the Swagger documentation is probably incorrect."
+          example = example.to_s
+        end
+
+        [content_type, example]
+      end
+
+      def check_deprecated!(env, operation, specified_headers)
+        if operation["deprecated"]
+          specified_headers["X-Swaggerific-Deprecated-Endpoint"] = "true"
+          halt(405,
+            {
+              "error" => "deprecated_endpoint",
+              "message" => "This endpoint has been flagged as deprecated. Please set the X-Swaggerific-Deprecated-Endpoints header to `allow` if you still want to use it, but avoid doing so if possible."
+            }.to_json,
+            specified_headers
+          ) unless env["HTTP_X_SWAGGERIFIC_DEPRECATED_ENDPOINTS"] == "allow"
+        end
+      end
+
+      def check_content_type!(env, operation)
+        return if operation['consumes'].nil?
+        acceptable_type = best_mime_type([env['CONTENT_TYPE'].split(';').first], operation['consumes'])
+        if acceptable_type.nil?
+          halt(415, {
+            "error" => "unnacceptable_content_type",
+            "message" => "The Content-Type given in the request cannot be dealt with by this endpoint",
+            "details" => {
+              "delivered" => env['CONTENT_TYPE'].split(';').first,
+              "required" => operation['consumes']
+            }
+          }.to_json)
+        end
+      end
+
+      def no_route!
+        halt(404, {
+          "error" => "no_route",
+          "message" => "This route is not defined in the Swagger doc"
+        }.to_json)
       end
 
       def determine_best_status_code(env, availble_status_codes)
