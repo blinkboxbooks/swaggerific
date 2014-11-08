@@ -20,16 +20,19 @@ module Blinkbox
       @@logger = Logger.new(STDOUT)
 
       class << self
-        def new(filename_or_subdomain)
-          file = filename_or_subdomain.include?("/") ? filename_or_subdomain : File.join(@@swagger_store, "#{filename_or_subdomain}.yaml")
-          if @@instances[file].nil?
-            @@instances[file] = self.allocate
-            @@instances[file].send(:initialize_from_swagger, File.expand_path(file))
+        def call(env)
+          if File.directory?(@@swagger_store)
+            # Multi service mode
+            idx = (@@tld_level + 1) * -1
+            filename_or_subdomain = env['HTTP_HOST'].split(".")[0..idx].join(".")
+
+            return UploaderService.call(env) if filename_or_subdomain == ""
+          else
+            # Single service mode
+            filename_or_subdomain = @@swagger_store
           end
-          @@instances[file]
-        rescue
-          @@instances.delete(file)
-          raise "No such file or subdomain"
+
+          self.new(filename_or_subdomain).response(env)
         end
 
         def tld_level=(number)
@@ -62,21 +65,24 @@ module Blinkbox
         def logger=(logger)
           @@logger = logger
         end
+      end
 
-        def call(env)
-          if File.directory?(@@swagger_store)
-            # Multi service mode
-            idx = (@@tld_level + 1) * -1
-            filename_or_subdomain = env['HTTP_HOST'].split(".")[0..idx].join(".")
-
-            return UploaderService.call(env) if filename_or_subdomain == ""
-          else
-            # Single service mode
-            filename_or_subdomain = @@swagger_store
-          end
-
-          self.new(filename_or_subdomain).response(env)
-        end
+      def initialize(filename_or_subdomain)
+        filename = File.expand_path(filename_or_subdomain.include?("/") ? filename_or_subdomain : File.join(@@swagger_store, "#{filename_or_subdomain}.yaml"))
+        logger.debug "Creating Swaggerific instance from #{filename}"
+        data = File.read(filename)
+        @spec = YAML.load(data)
+        @hash = Digest::SHA1.hexdigest(data)[0..8]
+      rescue => e
+        logger.debug "No docs for #{filename}: #{e.class}"
+        body = {
+          "error" => "missing_swagger",
+          "message" => "No swagger file uploaded with the specified name could be found",
+          "details" => {
+            "filename" => File.basename(filename)
+          }
+        }.to_json
+        @canned_response = [404, headers, [body]]
       end
 
       def response(env)
@@ -229,23 +235,6 @@ module Blinkbox
         captures = matches.captures
         captures.map! { |capture| URI.unescape(capture) } if uri_decode
         Hash[matches.names.zip(captures)]
-      end
-
-      def initialize_from_swagger(filename)
-        logger.debug "Creating Swaggerific instance from #{filename}"
-        data = File.read(filename)
-        @spec = YAML.load(data)
-        @hash = Digest::SHA1.hexdigest(data)[0..8]
-      rescue => e
-        logger.debug "No docs for #{filename}: #{e.class}"
-        body = {
-          "error" => "missing_swagger",
-          "message" => "No swagger file uploaded with the specified name could be found",
-          "details" => {
-            "filename" => File.basename(filename)
-          }
-        }.to_json
-        @canned_response = [404, headers, [body]]
       end
 
       def logger
