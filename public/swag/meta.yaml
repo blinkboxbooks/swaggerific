@@ -84,6 +84,9 @@ paths:
         - name: subdomain
           in: path
           description: The spec to view
+          required: true
+          type: string
+          format: "^[a-z](?:[a-z\\-0-9]*[a-z0-9])?$"
       responses:
         200:
           description: The swagger file specified. Will also convert the Swagger YAML into JSON if the Accept header is set accordingly.
