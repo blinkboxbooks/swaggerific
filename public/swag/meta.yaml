@@ -3,7 +3,7 @@ swagger: "2.0"
 info:
   title: Swaggerific API
   description: A service for automatically creating stubs of services using Swagger 2.0 documentation.
-  version: 0.2.0
+  version: 0.3.0
 paths:
   /:
     get:
@@ -18,7 +18,7 @@ paths:
                 </body>
               </html>
   /swag:
-    post:
+    put:
       description: Upload a new swagger file for stubbing
       consumes:
         - multipart/form-data

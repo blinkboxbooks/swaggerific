@@ -29,9 +29,9 @@ module Blinkbox
                 root: "editor"
               ) if path =~ %r{^/editor(/.*)$}
               send_file(path, accept: env['HTTP_ACCEPT'])
-            when "post"
+            when "put"
               halt(404) unless path == "/swag"
-              spec = Service.new("meta").spec["paths"]["/swag"]["post"]
+              spec = Service.new("meta").spec["paths"]["/swag"]["put"]
               params = Parameters.new(spec["parameters"], env: env).all
               halt(400, {
                 "error" => "disallowed_subdomain",
