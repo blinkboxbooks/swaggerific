@@ -18,7 +18,7 @@ paths:
                 </body>
               </html>
   /swag:
-    post:
+    put:
       description: Upload a new swagger file for stubbing
       consumes:
         - multipart/form-data
