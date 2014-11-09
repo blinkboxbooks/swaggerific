@@ -19,15 +19,21 @@ module Blinkbox
             path = env['REQUEST_PATH'] || env['REQUEST_URI']
             case env['REQUEST_METHOD'].downcase
             when "get"
-              send_file(
-                "#{path}.yaml",
-                accept: env['HTTP_ACCEPT'],
-                headers: { "Access-Control-Allow-Origin" => "*" }
-              ) if path =~ %r{^/swag/}
-              send_file(
-                Regexp.last_match[1],
-                root: "editor"
-              ) if path =~ %r{^/editor(/.*)$}
+              if path =~ %r{^/swag/([a-z0-9\-]+)$}
+                status = 200
+                headers = { "Access-Control-Allow-Origin" => "*" }
+                if parse_accept_header(env['HTTP_ACCEPT']).include?("text/html")
+                  uri = URI::HTTP.build(host: env["SERVER_NAME"], port: env['SERVER_PORT'].to_i, path: "/swag/#{Regexp.last_match[1]}")
+                  status = 303
+                  headers["Location"] = "http://0.0.0.0:9000/?import=#{URI.encode(uri.to_s)}"
+                end
+                send_file(
+                  "#{path}.yaml",
+                  accept: env['HTTP_ACCEPT'],
+                  headers: headers,
+                  status: status
+                )
+              end
               send_file(path, accept: env['HTTP_ACCEPT'])
             when "put"
               halt(404) unless path == "/swag"
