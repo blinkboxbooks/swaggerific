@@ -95,13 +95,13 @@ paths:
               ---
               swagger: "2.0"
               info:
-                title: A swagger document for a service which does nothing (sitting on the %{name} subdomain)
+                title: A swagger document for a service which does nothing (sitting on the %{subdomain} subdomain)
                 version: 1.0.0
             application/json: |
               {
                 "swagger": "2.0",
                 "info": {
-                  "title": "A swagger document for a service which does nothing (sitting on the %{name} subdomain)",
+                  "title": "A swagger document for a service which does nothing (sitting on the %{subdomain} subdomain)",
                   "version": "1.0.0"
                 }
               }
@@ -111,5 +111,5 @@ paths:
             application/json: |
               {
                 "error": "missing_swagger",
-                "message": "No swagger file uploaded with the name '%{name}' could be found"
+                "message": "No swagger file uploaded with the name '%{subdomain}' could be found"
               }
