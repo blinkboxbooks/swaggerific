@@ -30,6 +30,14 @@ bundle install
 foreman start -p 5000
 ```
 
+### Docker
+```
+git clone https://github.com/blinkboxbooks/swaggerific.git
+cd swaggerific
+docker build -t swaggerific .
+docker run -dt -p 5000:5000 swaggerific
+```
+
 ### Getting going on Heroku
 
 ```
