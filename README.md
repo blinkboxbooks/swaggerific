@@ -35,7 +35,7 @@ foreman start -p 5000
 git clone https://github.com/blinkboxbooks/swaggerific.git
 cd swaggerific
 docker build -t swaggerific .
-docker run -d -t -p 5000:5000 swaggerific swaggerific
+docker run -dt -p 5000:5000 swaggerific
 ```
 
 ### Getting going on Heroku
