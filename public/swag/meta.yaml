@@ -7,9 +7,9 @@ info:
 paths:
   /:
     get:
-      description: Introductary homepage
       responses:
         200:
+          description: Swaggerific's intro & homepage
           examples:
             text/html: |
               <html>
@@ -77,9 +77,16 @@ paths:
                 "error": "invalid_swagger",
                 "message": "The file uploaded was not Swagger 2.0 documentation"
               }
-  /swag/{name}:
+  /swag/{subdomain}:
     get:
       description: Returns the swagger file previously uploaded under the given name
+      parameters:
+        - name: subdomain
+          in: path
+          description: The spec to view
+          required: true
+          type: string
+          format: "^[a-z](?:[a-z\\-0-9]*[a-z0-9])?$"
       responses:
         200:
           description: The swagger file specified. Will also convert the Swagger YAML into JSON if the Accept header is set accordingly.
@@ -88,13 +95,13 @@ paths:
               ---
               swagger: "2.0"
               info:
-                title: A swagger document for a service which does nothing (sitting on the %{name} subdomain)
+                title: A swagger document for a service which does nothing (sitting on the %{subdomain} subdomain)
                 version: 1.0.0
             application/json: |
               {
                 "swagger": "2.0",
                 "info": {
-                  "title": "A swagger document for a service which does nothing (sitting on the %{name} subdomain)",
+                  "title": "A swagger document for a service which does nothing (sitting on the %{subdomain} subdomain)",
                   "version": "1.0.0"
                 }
               }
@@ -104,5 +111,5 @@ paths:
             application/json: |
               {
                 "error": "missing_swagger",
-                "message": "No swagger file uploaded with the name '%{name}' could be found"
+                "message": "No swagger file uploaded with the name '%{subdomain}' could be found"
               }
