@@ -9,6 +9,7 @@ require_relative "helpers"
 module Blinkbox
   module Swaggerific
     class Service
+      include FakeSinatra
       include Helpers
       attr_reader :spec, :hash
       
@@ -23,7 +24,6 @@ module Blinkbox
             # Multi service mode
             idx = (@@tld_level + 1) * -1
             filename_or_subdomain = env['HTTP_HOST'].split(".")[0..idx].join(".")
-
             return UploaderService.call(env) if filename_or_subdomain == ""
           else
             # Single service mode
