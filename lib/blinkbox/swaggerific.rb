@@ -1,0 +1,5 @@
+require "blinkbox/swaggerific/version"
+require "blinkbox/swaggerific/helpers"
+require "blinkbox/swaggerific/service"
+require "blinkbox/swaggerific/parameters"
+require "blinkbox/swaggerific/uploader_service"

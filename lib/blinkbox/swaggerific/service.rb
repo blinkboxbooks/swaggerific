@@ -4,10 +4,7 @@ require "faker"
 require "genny"
 require "logger"
 require "digest/sha1"
-require "blinkbox/swaggerific/version"
-require "blinkbox/swaggerific/helpers"
-require "blinkbox/swaggerific/parameters"
-require "blinkbox/swaggerific/uploader_service"
+require_relative "helpers"
 
 module Blinkbox
   module Swaggerific

@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift("lib")
-require "blinkbox/swaggerific/service"
+require "blinkbox/swaggerific"
 require "yaml"
 
 if ENV['SWAGGERIFIC_TLD_LEVEL']
