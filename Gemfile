@@ -5,6 +5,7 @@ gem "faker"
 gem "rack"
 gem "json-schema"
 gem "puma"
+gem "sinatra"
 
 group :test do
   gem "rake"

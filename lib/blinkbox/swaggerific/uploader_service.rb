@@ -1,98 +1,102 @@
+require "tempfile"
 require "fileutils"
+require "sinatra/base"
+require_relative "helpers"
 
 module Blinkbox
   module Swaggerific
-    class UploaderService
-      CONVERTERS = [
-        {
-          from_types: ["application/x-yaml", "text/yaml"],
-          to_type: "application/json",
-          convert_body: proc { |body| YAML.load(body).to_json }
-        }
-      ].freeze
+    class UploaderService < Sinatra::Base
+      include Helpers
 
-      class << self
-        include Helpers
+      set :root, File.expand_path("../../../", __dir__)
 
-        def call(env)
-          catch :halt do
-            path = env['REQUEST_PATH'] || env['REQUEST_URI']
-            case env['REQUEST_METHOD'].downcase
-            when "get"
-              send_file(
-                "#{path}.yaml",
-                accept: env['HTTP_ACCEPT'],
-                headers: { "Access-Control-Allow-Origin" => "*" }
-              ) if path =~ %r{^/swag/}
-              send_file(
-                Regexp.last_match[1],
-                root: "editor"
-              ) if path =~ %r{^/editor(/.*)$}
-              send_file(path, accept: env['HTTP_ACCEPT'])
-            when "put"
-              halt(404) unless path == "/swag"
-              spec = Service.new("meta").spec["paths"]["/swag"]["put"]
-              params = Parameters.new(spec["parameters"], env: env).all
-              halt(400, {
-                "error" => "disallowed_subdomain",
-                "message" => "You cannot override the meta subdomain"
-              }.to_json) if params[:subdomain] == "meta"
-              
-              # Using the service's own swagger documentation to populate its responses?! It'll never work!!1!
-              halt(415, spec['responses'][415]['examples']['application/json']) unless (Service.valid_swagger?(params[:spec][:tempfile].path))
+      configure do
+        @@spec = Blinkbox::Swaggerific::Service.new("meta").spec
+      end
 
-              begin
-                FileUtils.mv(params[:spec][:tempfile].path, File.join(Service.swagger_store, "#{params[:subdomain]}.yaml"))
-              rescue e
-                halt(500, {
-                  "error" => "storage_failure",
-                  "message" => "Swaggerific was unable to store the uploaded file",
-                  "details" => {
-                    "class" => e.class,
-                    "message" => e.message
-                  }
-                }.to_json)
-              end
+      helpers do
+        def upload_swagger!(subdomain, io)
+          content_type :json
+          halt(400, {
+            "error" => "disallowed_subdomain",
+            "message" => "You cannot change the meta subdomain"
+          }.to_json) if subdomain == "meta"
+          halt(415,
+            @@spec['paths']['/swag']['put']['responses'][415]['examples']['application/json']
+          ) unless Service.valid_swagger?(io.path)
 
-              halt(200, {
-                "stubUrl" => "#{env['rack.url_scheme']}://#{params[:subdomain]}.#{env['HTTP_HOST']}",
-                "hash" => Service.new(params[:subdomain]).hash
-              }.to_json)
-            else
-              halt(501)
-            end
+          begin
+            FileUtils.mv(io.path, File.join(Service.swagger_store, "#{subdomain}.yaml"))
+          rescue e
+            halt(500, {
+              "error" => "storage_failure",
+              "message" => "Swaggerific was unable to store the uploaded file",
+              "details" => {
+                "class" => e.class,
+                "message" => e.message
+              }
+            }.to_json)
           end
+
+          halt(200, {
+            "stubUrl" => stub_url(subdomain),
+            "hash" => Service.new(subdomain).hash
+          }.to_json)
         end
 
-        def send_file(filename, root: "public", accept: "*/*", status: 200, headers: {})
-          filename = "/index.html" if filename == "/"
-          ext = File.extname(filename)
-          filename = File.join(__dir__, "../../../", root, File.expand_path(filename, "/"))
-          body = File.read(filename)
-          type, body = convert(Rack::Mime.mime_type(ext), accept, body)
-          raise unless headers["Content-Type"] = best_mime_type(equivalent_types(type), accept)
-          halt(status, body, headers)
-        rescue Errno::ENOENT
-          # Only return the 404 html if we think that's what they want
-          accept = Rack::Mime.mime_type(ext, "text/html") if accept == "*/*"
-          send_file("404.html", status: 404) if best_mime_type(["text/html"], accept)
-          halt(404)
+        def stub_url(subdomain)
+          "#{env['rack.url_scheme']}://#{subdomain}.#{env['HTTP_HOST']}"
         end
+      end
 
-        def equivalent_types(*type)
-          type.push("application/x-yaml") if type.include?("text/yaml")
-          type
-        end
+      not_found do
+        send_file("public/404.html")
+      end
 
-        def convert(type, accept, body)
-          CONVERTERS.each do |c|
-            if (c[:from_types].include?(type) && best_mime_type(c[:from_types] + [c[:to_type]], accept) == c[:to_type])
-              body = c[:convert_body].call(body)
-              type = c[:to_type]
-            end
-          end
-          [type, body]
+      get "/" do
+        send_file("public/index.html")
+      end
+
+      get %r{^/swag/([a-z0-9\-]+)$} do |subdomain|
+        can_provide = %w{text/html application/x-yaml text/yaml application/json}
+        filename = File.join(Service.swagger_store, "#{subdomain}.yaml")
+        case best_mime_type(can_provide, env['HTTP_ACCEPT'])
+        when "text/html"
+          uri = URI::HTTP.build(host: env["SERVER_NAME"], port: env['SERVER_PORT'].to_i, path: "/swag/#{subdomain}")
+          editor_url = "http://editor.swagger.io/#/edit?import=#{URI.encode(uri.to_s)}"
+          erb :'editor.html', locals: {
+            editor_url: editor_url,
+            stub_url: stub_url(subdomain)
+          }
+        when "application/x-yaml", "text/yaml"
+          headers["Access-Control-Allow-Origin"] = "*"
+          send_file(filename)
+        when "application/json"
+          data = YAML.load(open(filename))
+          headers["Access-Control-Allow-Origin"] = "*"
+          content_type :json
+          halt(200, data.to_json)
+        else
+          content_type :json
+          halt(406, {
+            "error" => "not_acceptable",
+            "message" => "The requested file formats are not available for this document."
+          }.to_json)
         end
+      end
+
+      put %r{^/swag/([a-z0-9\-]+)$} do |subdomain|
+        io = Tempfile.new
+        io.unlink # file reference is deleted; access remains available while handler is open
+        request.body.rewind
+        io.write request.body
+        io.rewind
+        upload_swagger!(subdomain, io)
+      end
+
+      put "/swag" do
+        params = Parameters.new(@@spec['paths']['/swag']['put']['parameters'], env: env).all
+        upload_swagger!(params[:subdomain], params[:spec][:tempfile])
       end
     end
   end

@@ -2,7 +2,7 @@ $LOAD_PATH.unshift File.join(__dir__, "../lib")
 require "tempfile"
 require "rack/test"
 require "json-schema"
-require "blinkbox/swaggerific/service"
+require "blinkbox/swaggerific"
 require "active_support/core_ext/hash/deep_merge"
 
 module Helpers

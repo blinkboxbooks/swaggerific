@@ -1,12 +1,22 @@
 module Blinkbox
   module Swaggerific
-    module Helpers
+    module FakeSinatra
+      def headers(headers = {})
+        {
+          "X-Swaggerific-Version" => VERSION,
+          "Access-Control-Allow-Origin" => "*",
+          "Content-Type" => "application/json" # the default content type
+        }.merge(headers)
+      end
+
       def halt(status, body = "", extra_headers = {})
         headers = headers(extra_headers)
         headers['X-Swaggerific-Hash'] = @hash unless @hash.nil?
         throw :halt, [status, headers, [body]]
       end
+    end
 
+    module Helpers
       # TODO: Can I improve this accept header processing?
       def parse_accept_header(header)
         header.split(",").map { |s| s.split(";").first }
@@ -20,14 +30,6 @@ module Blinkbox
           return chosen if !chosen.nil?
         end
         nil
-      end
-
-      def headers(headers = {})
-        {
-          "X-Swaggerific-Version" => VERSION,
-          "Access-Control-Allow-Origin" => "*",
-          "Content-Type" => "application/json" # the default content type
-        }.merge(headers)
       end
     end
   end
