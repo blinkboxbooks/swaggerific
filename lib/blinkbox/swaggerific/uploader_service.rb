@@ -25,7 +25,7 @@ module Blinkbox
                 if parse_accept_header(env['HTTP_ACCEPT']).include?("text/html")
                   uri = URI::HTTP.build(host: env["SERVER_NAME"], port: env['SERVER_PORT'].to_i, path: "/swag/#{Regexp.last_match[1]}")
                   status = 303
-                  headers["Location"] = "http://0.0.0.0:9000/?import=#{URI.encode(uri.to_s)}"
+                  headers["Location"] = "http://editor.swagger.io/#/edit?import=#{URI.encode(uri.to_s)}"
                 end
                 send_file(
                   "#{path}.yaml",
