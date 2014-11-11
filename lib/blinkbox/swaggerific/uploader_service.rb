@@ -57,17 +57,17 @@ module Blinkbox
         send_file("public/index.html")
       end
 
+      get "/editor/" do
+        send_file("public/editor/index.html")
+      end
+
       get %r{^/swag/([a-z0-9\-]+)$} do |subdomain|
         can_provide = %w{text/html application/x-yaml text/yaml application/json}
         filename = File.join(Service.swagger_store, "#{subdomain}.yaml")
         case best_mime_type(can_provide, env['HTTP_ACCEPT'])
         when "text/html"
           uri = URI::HTTP.build(host: env["SERVER_NAME"], port: env['SERVER_PORT'].to_i, path: "/swag/#{subdomain}")
-          editor_url = "http://editor.swagger.io/#/edit?import=#{URI.encode(uri.to_s)}"
-          erb :'editor.html', locals: {
-            editor_url: editor_url,
-            stub_url: stub_url(subdomain)
-          }
+          redirect to("/editor/#/edit?import=#{URI.encode(uri.to_s)}"), 303
         when "application/x-yaml", "text/yaml"
           headers["Access-Control-Allow-Origin"] = "*"
           send_file(filename)
