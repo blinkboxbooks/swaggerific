@@ -91,7 +91,10 @@ module Blinkbox
           when 0
             halt(404)
           when 1
-            process_path(env, matching_paths.first)
+            locale = I18n.exists?(:faker, env['HTTP_ACCEPT_LANGUAGE']) ? env['HTTP_ACCEPT_LANGUAGE'] : "en-GB"
+            I18n.with_locale(locale) do
+              process_path(env, matching_paths.first)
+            end
           else
             halt(500, {
               "error" => "route_uncertainty",
@@ -110,7 +113,6 @@ module Blinkbox
       private
 
       def process_path(env, operation: {}, path_params: {}, query_params: {})
-        Faker::Config.locale = env['HTTP_ACCEPT_LANGUAGE'] if I18n.exists?(:faker, env['HTTP_ACCEPT_LANGUAGE'])
         status_code = determine_best_status_code(env, operation['responses'].keys)
         route = operation['responses'][status_code]
         no_route! if route.nil?
