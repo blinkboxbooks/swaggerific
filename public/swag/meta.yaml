@@ -3,7 +3,7 @@ swagger: "2.0"
 info:
   title: Swaggerific API
   description: A service for automatically creating stubs of services using Swagger 2.0 documentation.
-  version: 0.3.0
+  version: 0.3.1
 paths:
   /:
     get:
@@ -44,11 +44,11 @@ paths:
               - hash
             properties:
               stubUrl:
-                title: The URL where the newly created stub can be accessed
+                description: The URL where the newly created stub can be accessed
                 type: string
                 format: uri
               hash:
-                title: |
+                description: |
                   A hash generated from the uploaded document. All requests to the stub
                   generated with this upload will have the `X-Swaggerific-Hash` response
                   header set to this value. This is useful for detecting if your stub

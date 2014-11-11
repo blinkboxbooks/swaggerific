@@ -64,6 +64,7 @@ module Blinkbox
       get %r{^/swag/([a-z0-9\-]+)$} do |subdomain|
         can_provide = %w{text/html application/x-yaml text/yaml application/json}
         filename = File.join(Service.swagger_store, "#{subdomain}.yaml")
+        headers['Vary'] = "Accept"
         case best_mime_type(can_provide, env['HTTP_ACCEPT'])
         when "text/html"
           uri = URI::HTTP.build(host: env["SERVER_NAME"], port: env['SERVER_PORT'].to_i, path: "/swag/#{subdomain}")
