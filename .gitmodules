@@ -1,3 +1,0 @@
-[submodule "public/editor"]
-	path = public/editor
-	url = git@github.com:blinkboxbooks/swaggerific-editor-dist.git
