@@ -2,6 +2,7 @@ module Blinkbox
   module Swaggerific
     class Parameters
       include Helpers
+      include FakeSinatra
 
       # TODO: Headers, query, body?
       def initialize(spec, path: {}, env: {}, header: {}, query: {})
@@ -33,34 +34,9 @@ module Blinkbox
           next nil if !param_spec['required']
           value = @params[param_spec['in'].to_sym][param_spec['name']]
           reason = "is missing" if value.nil?
-          reason ||= case param_spec['type']
-          when 'file'
-            "is not a file" if !value.is_a?(Hash) || !value[:tempfile] || !value[:tempfile].is_a?(Tempfile)
-          when 'string'
-            if value.match(/^.*$/)
-              case param_spec['format']
-              when "string"
-              when nil
-                # No action for either of these, there's no required format
-              when %w{integer long float double byte boolean date dateTime uri}
-                # TODO: support some of these
-                "has a required format that Swaggerific doesn't support yet. Sorry!"
-              else
-                "isn't of the required format" unless Regexp.new(param_spec['format']).match(value)
-              end
-            else
-              "is not a string"
-            end
-          when 'number'
-            "is not a number" unless value.match(/^-?\d+(?:\.\d+)?$/)
-          when 'integer'
-            "is not an integer" unless value.match(/^-?\d+$/)
-          when 'boolean'
-            # TODO: Cope with Booleans
-            "is supposed to be a boolean and I dont't know how to cope with that..."
-          else
-            "is untestable as no type was specified in the swagger docs"
-          end
+          m = "missing_#{param_spec['type']}".to_sym
+          reason ||= "is untestable as no type was specified in the swagger docs" if !respond_to?(m)
+          reason ||= send(m, value, param_spec)
           [ param_spec['name'], reason ] unless reason.nil?
         }.compact]
         @missing
@@ -71,6 +47,29 @@ module Blinkbox
           all_params.merge!(group.last)
         end
         Hash[all_params.map{ |k, v| [k.to_sym, v] }] if symbol_keys
+      end
+
+      private
+
+      def missing_file(value, param_spec)
+        "is not a file" if !value.is_a?(Hash) || !value[:tempfile] || !value[:tempfile].is_a?(Tempfile)
+      end
+
+      def missing_number(value, param_spec)
+        "is not a number" unless value.match(/^-?\d+(?:\.\d+)?$/)
+      end
+
+      def missing_integer(value, param_spec)
+        "is not an integer" unless value.match(/^-?\d+$/)
+      end
+
+      def missing_string(value, param_spec)
+        "is not a string" if !value.match(/^.*$/)
+      end
+
+      def missing_boolean(value, param_spec)
+        # TODO: Cope with Booleans
+        "is supposed to be a boolean and I dont't know how to cope with that..."
       end
     end
   end
