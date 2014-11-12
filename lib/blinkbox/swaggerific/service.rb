@@ -5,6 +5,7 @@ require "genny"
 require "logger"
 require "digest/sha1"
 require_relative "helpers"
+require_relative "examplers"
 
 module Blinkbox
   module Swaggerific
@@ -91,7 +92,10 @@ module Blinkbox
           when 0
             halt(404)
           when 1
-            process_path(env, matching_paths.first)
+            locale = I18n.exists?(:faker, env['HTTP_ACCEPT_LANGUAGE']) ? env['HTTP_ACCEPT_LANGUAGE'] : "en-GB"
+            I18n.with_locale(locale) do
+              process_path(env, matching_paths.first)
+            end
           else
             halt(500, {
               "error" => "route_uncertainty",
@@ -110,7 +114,6 @@ module Blinkbox
       private
 
       def process_path(env, operation: {}, path_params: {}, query_params: {})
-        Faker::Config.locale = env['HTTP_ACCEPT_LANGUAGE'] if I18n.exists?(:faker, env['HTTP_ACCEPT_LANGUAGE'])
         status_code = determine_best_status_code(env, operation['responses'].keys)
         route = operation['responses'][status_code]
         no_route! if route.nil?
@@ -139,15 +142,22 @@ module Blinkbox
       end
 
       def create_example(env, route)
-        example_content_types = route['examples'].keys rescue []
-        generatable_examples = route['schema'] ? ["application/json"] : []
-        content_type = best_mime_type(example_content_types + generatable_examples, env['HTTP_ACCEPT'])
+        (route['schema']['definitions'] ||= {}).merge!(@spec['definitions']) if @spec['definitions']
+        sources = [
+          ExamplesExampler.from_examples(route['examples']),
+          SchemaExampler.from_schema(route['schema'])
+        ].compact
 
-        example = route['examples'][content_type] if example_content_types.include?(content_type)
-          
-        if !generatable_examples.empty?
-          (route['schema']['definitions'] ||= {}).merge!(@spec['definitions']) if @spec['definitions']
-          example = JSONSchema.new(route['schema']).genny.to_json
+        sources.reverse! if env['HTTP_X_SWAGGERIFIC_RESPONSES_FROM'] == "schema"
+
+        # X-Swaggerific-Responses-From
+        generatable_types = sources.map { |ex| ex.generatable_types }.flatten.uniq
+        content_type = best_mime_type(generatable_types, env['HTTP_ACCEPT'])
+
+        example = nil
+        sources.each do |s|
+          example ||= s.example(content_type)
+          break if !example.nil?
         end
         
         halt(501, {
@@ -158,12 +168,15 @@ module Blinkbox
           }
         }.to_json) if example.nil?
 
-        if !example.is_a?(String)
-          logger.warn "The example given is not a string, the Swagger documentation is probably incorrect."
-          example = example.to_s
-        end
-
         [content_type, example]
+      end
+
+      def example_from_examples()
+
+      end
+
+      def example_from_schema()
+
       end
 
       def check_deprecated!(env, operation, specified_headers)
