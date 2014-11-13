@@ -13,7 +13,7 @@ end
 if ENV['SWAGGERIFIC_SINGLE_SERVICE']
   begin
     Blinkbox::Swaggerific::Service.swagger_store = ENV['SWAGGERIFIC_SINGLE_SERVICE']
-  raise
+  rescue
     warn "SWAGGERIFIC_SINGLE_SERVICE is not a Swagger 2.0 file"    
   end
 end
