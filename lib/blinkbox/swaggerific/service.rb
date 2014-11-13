@@ -148,9 +148,8 @@ module Blinkbox
           SchemaExampler.from_schema(route['schema'])
         ].compact
 
-        sources.reverse! if env['HTTP_X_SWAGGERIFIC_RESPONSES_FROM'] == "schema"
+        sources.reverse! if env['HTTP_X_SWAGGERIFIC_RESPOND_FROM'] == "schema"
 
-        # X-Swaggerific-Responses-From
         generatable_types = sources.map { |ex| ex.generatable_types }.flatten.uniq
         content_type = best_mime_type(generatable_types, env['HTTP_ACCEPT'])
 
