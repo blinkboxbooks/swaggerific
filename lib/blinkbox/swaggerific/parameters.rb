@@ -4,7 +4,6 @@ module Blinkbox
       include Helpers
       include FakeSinatra
 
-      # TODO: Headers, query, body?
       def initialize(spec, path: {}, env: {}, header: {}, query: {})
         @spec = spec
         # NB. When 'all' is called, a keys present in more than one section will be overridden by the value in the latest section.
@@ -35,8 +34,7 @@ module Blinkbox
           value = @params[param_spec['in'].to_sym][param_spec['name']]
           reason = "is missing" if value.nil?
           m = "missing_#{param_spec['type']}".to_sym
-          reason ||= "is untestable as no type was specified in the swagger docs" if !respond_to?(m)
-          reason ||= send(m, value, param_spec)
+          reason ||= send(m, value, param_spec) if self.respond_to?(m)
           [ param_spec['name'], reason ] unless reason.nil?
         }.compact]
         @missing
@@ -48,8 +46,6 @@ module Blinkbox
         end
         Hash[all_params.map{ |k, v| [k.to_sym, v] }] if symbol_keys
       end
-
-      private
 
       def missing_file(value, param_spec)
         "is not a file" if !value.is_a?(Hash) || !value[:tempfile] || !value[:tempfile].is_a?(Tempfile)

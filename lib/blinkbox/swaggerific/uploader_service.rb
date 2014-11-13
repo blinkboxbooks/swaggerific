@@ -88,8 +88,7 @@ module Blinkbox
 
       put %r{^/swag/([a-z0-9\-]+)$} do |subdomain|
         io = Tempfile.new("swagger")
-        p io.path
-        # io.unlink # file reference is deleted; access remains available while handler is open
+        io.unlink # file reference is deleted; access remains available while handler is open
         request.body.rewind
         io.write request.body.read
         io.rewind
