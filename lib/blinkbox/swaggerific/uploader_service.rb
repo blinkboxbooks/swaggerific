@@ -17,17 +17,24 @@ module Blinkbox
       helpers do
         def upload_swagger!(subdomain, io)
           content_type :json
+
           halt(400, {
             "error" => "disallowed_subdomain",
             "message" => "You cannot change the meta subdomain"
           }.to_json) if subdomain == "meta"
+
+          halt(400, {
+            "error" => "disallowed_subdomain",
+            "message" => "Subdomain featured invalid characters"
+          }.to_json) if subdomain !~ /^[a-z](?:[a-z\-0-9]*[a-z0-9])?$/
+
           halt(415,
             @@spec['paths']['/swag']['put']['responses'][415]['examples']['application/json']
           ) unless Service.valid_swagger?(io.path)
 
           begin
             FileUtils.mv(io.path, File.join(Service.swagger_store, "#{subdomain}.yaml"))
-          rescue e
+          rescue => e
             halt(500, {
               "error" => "storage_failure",
               "message" => "Swaggerific was unable to store the uploaded file",
