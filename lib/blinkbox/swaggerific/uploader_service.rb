@@ -17,6 +17,7 @@ module Blinkbox
       helpers do
         def upload_swagger!(subdomain, io)
           content_type :json
+          subdomain.downcase!
 
           halt(400, {
             "error" => "disallowed_subdomain",
