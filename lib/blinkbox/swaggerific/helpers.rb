@@ -1,3 +1,5 @@
+require 'active_support/core_ext/string/inflections'
+
 module Blinkbox
   module Swaggerific
     module FakeSinatra
@@ -30,6 +32,12 @@ module Blinkbox
           return chosen if !chosen.nil?
         end
         nil
+      end
+
+      def headers_from_env(env)
+        Hash[env.map { |key, value|
+          [Regexp.last_match[1].titleize.tr(' ', '-'), value] if (key =~ /^HTTP_(.+)$/)
+        }.compact]
       end
     end
   end

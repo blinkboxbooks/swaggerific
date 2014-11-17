@@ -181,5 +181,132 @@ context Blinkbox::Swaggerific::Service do
         expect(JSON.parse(last_response.body)).to_not eq(query_params)
       end
     end
+
+    describe "with header params" do
+      it "must respond with the example if a required header is provided" do
+        example = { "msg" => "This is an example" }
+        stub_swagger(
+          swaggerise(
+            pathdef_for(
+              "/",
+              body: example.to_json,
+              params: [
+                {
+                  "name" => "Authorization",
+                  "in" => "header",
+                  "type" => "string",
+                  "required" => true
+                }
+              ]
+            )
+          )
+        )
+        header "Authorization", "Bearer abc123"
+        get "/"
+        expect(last_response.status).to eq(200)
+        expect(JSON.parse(last_response.body)).to eq(example)
+      end
+
+      it "must respond with the example if a required header of the required format is provided" do
+        example = { "msg" => "This is an example" }
+        stub_swagger(
+          swaggerise(
+            pathdef_for(
+              "/",
+              body: example.to_json,
+              params: [
+                {
+                  "name" => "Authorization",
+                  "in" => "header",
+                  "type" => "string",
+                  "required" => true,
+                  "format" => "/^Bearer/"
+                }
+              ]
+            )
+          )
+        )
+        header "Authorization", "Bearer abc123"
+        get "/"
+        expect(last_response.status).to eq(200)
+        expect(JSON.parse(last_response.body)).to eq(example)
+      end
+
+      it "must return 400 with missing_parameters if a required header is present but with an invalid type" do
+        example = { "msg" => "This is an example" }
+        stub_swagger(
+          swaggerise(
+            pathdef_for(
+              "/",
+              body: example.to_json,
+              params: [
+                {
+                  "name" => "Authorization",
+                  "in" => "header",
+                  "type" => "integer",
+                  "required" => true
+                }
+              ]
+            )
+          )
+        )
+        header "Authorization", "NotAnInteger"
+        get "/"
+        expect(last_response.status).to eq(400)
+        res = JSON.parse(last_response.body)
+        expect(res['error']).to eq("missing_params")
+      end
+
+      it "must return 400 with missing_parameters if a required header is present but with an invalid format" do
+        example = { "msg" => "This is an example" }
+        stub_swagger(
+          swaggerise(
+            pathdef_for(
+              "/",
+              body: example.to_json,
+              params: [
+                {
+                  "name" => "Authorization",
+                  "in" => "header",
+                  "type" => "string",
+                  "required" => true,
+                  "format" => "/^Bearer/"
+                }
+              ]
+            )
+          )
+        )
+        header "Authorization", "NotBearer"
+        get "/"
+        expect(last_response.status).to eq(400)
+        res = JSON.parse(last_response.body)
+        expect(res['error']).to eq("missing_params")
+      end
+
+      it "must return 400 with missing_parameters if a required header is missing" do
+        example = { "msg" => "This is an example" }
+        stub_swagger(
+          swaggerise(
+            pathdef_for(
+              "/",
+              body: example.to_json,
+              params: [
+                {
+                  "name" => "Authorization",
+                  "in" => "header",
+                  "type" => "string",
+                  "required" => true
+                }
+              ]
+            )
+          )
+        )
+        # No header declaration
+        get "/"
+        expect(last_response.status).to eq(400)
+        res = JSON.parse(last_response.body)
+        expect(res['error']).to eq("missing_params")
+      end
+    end
   end
 end

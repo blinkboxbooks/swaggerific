@@ -4,24 +4,24 @@ module Blinkbox
       include Helpers
       include FakeSinatra
 
-      def initialize(spec, path: {}, env: {}, header: {}, query: {})
+      def initialize(spec, path: {}, env: {}, header: headers_from_env(env), query: {})
         @spec = spec
         # NB. When 'all' is called, a keys present in more than one section will be overridden by the value in the latest section.
         @params = {
           path: path,
           # TODO: The rescue is to cope with the case where one form item is sent, it's a file but no actual file is specified. Better way to deal with this?
           formData: (Rack::Multipart::Parser.new(env).parse || {} rescue {}),
-          # TODO: May need to cope with unusual casing in header keys?
           header: header,
           query: query
         }
 
-        if !missing.empty?
+        failure_reasons = missing
+        if !failure_reasons.empty?
           halt(400, {
             "error" => "missing_params",
             "message" => "Required parameters are missing",
             "details" => {
-              "reasons" => missing
+              "reasons" => failure_reasons
             }
           }.to_json)
         end
@@ -31,7 +31,7 @@ module Blinkbox
         # TODO: Probably also need to do non-required but present params
         @missing ||= Hash[@spec.map { |param_spec|
           next nil if !param_spec['required']
-          value = @params[param_spec['in'].to_sym][param_spec['name']]
+          value = @params[param_spec['in'].to_sym][param_spec['name']] rescue nil
           reason = "is missing" if value.nil?
           m = "missing_#{param_spec['type']}".to_sym
           reason ||= send(m, value, param_spec) if self.respond_to?(m)
@@ -60,7 +60,11 @@ module Blinkbox
       end
 
       def missing_string(value, param_spec)
-        "is not a string" if !value.match(/^.*$/)
+        re = case param_spec['format']
+        when nil then %r{^.*$}
+        when %r{^/(.+)/$} then Regexp.new(Regexp.last_match[1])
+        end
+        "is not a string" if !value.match(re)
       end
 
       def missing_boolean(value, param_spec)
