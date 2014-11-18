@@ -125,12 +125,7 @@ module Blinkbox
           operation['parameters'] || {},
           path: path_params,
           env: env,
-          query: query_params,
-          header: Hash[env.map { |key, value|
-            if (key =~ /^HTTP_(.+)$/)
-              [Regexp.last_match[1].downcase.tr("_", "-"), value]
-            end
-          }.compact]
+          query: query_params
         )
 
         content_type, example = create_example(env, route)

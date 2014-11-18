@@ -40,6 +40,7 @@ RSpec.configure do |c|
   c.before(:each) do
     @logger = instance_double(Logger)
     allow(@logger).to receive(:debug)
+    allow(@logger).to receive(:fatal) { |error| raise error }
     Blinkbox::Swaggerific::Service.logger = @logger
   end
 
