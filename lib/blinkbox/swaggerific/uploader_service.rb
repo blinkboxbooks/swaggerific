@@ -19,10 +19,12 @@ module Blinkbox
           content_type :json
           subdomain.downcase!
 
-          halt(400, {
-            "error" => "disallowed_subdomain",
-            "message" => "You cannot change the meta subdomain"
-          }.to_json) if subdomain == "meta"
+          %w{www meta}.each do |restricted_domain|
+            halt(400, {
+              "error" => "disallowed_subdomain",
+              "message" => "You cannot change the #{restricted_domain} subdomain"
+            }.to_json) if subdomain == restricted_domain
+          end
 
           halt(400, {
             "error" => "disallowed_subdomain",
