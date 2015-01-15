@@ -25,7 +25,7 @@ module Blinkbox
             # Multi service mode
             idx = (@@tld_level + 1) * -1
             filename_or_subdomain = env['HTTP_HOST'].split(".")[0..idx].join(".")
-            return UploaderService.call(env) if filename_or_subdomain == ""
+            return UploaderService.call(env) if ["", "www"].include? filename_or_subdomain
           else
             # Single service mode
             filename_or_subdomain = @@swagger_store
