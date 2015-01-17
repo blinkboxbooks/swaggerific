@@ -1,8 +1,9 @@
 'use strict';
 (function() {
   $(document).ready(function() {
-    $('*[rel="subdomain"]:not(a)').text('.' + window.location.host);
-    $('a[rel="subdomain"]').attr('href', '//meta.' + window.location.host);
+    var host = window.location.host.replace(/^www\./,'');
+    $('*[rel="subdomain"]:not(a)').text('.' + host);
+    $('a[rel="subdomain"]').attr('href', '//meta.' + host);
 
     $('#subdomain').bind('input change', function() {
       var invalid = !this.value.match(/^[a-z](?:[a-z-0-9]*[a-z0-9])?$/i) || this.value === 'meta';

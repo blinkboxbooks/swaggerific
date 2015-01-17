@@ -10,7 +10,7 @@ module Blinkbox
         @params = {
           path: path,
           # TODO: The rescue is to cope with the case where one form item is sent, it's a file but no actual file is specified. Better way to deal with this?
-          formData: (Rack::Multipart::Parser.new(env).parse || {} rescue {}),
+          formData: (Rack::Multipart::Parser.create(env).parse || {} rescue {}),
           header: header,
           query: query
         }

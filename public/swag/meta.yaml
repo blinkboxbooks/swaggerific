@@ -26,7 +26,7 @@ paths:
         - in: formData
           name: subdomain
           type: string
-          format: "^[a-z](?:[a-z\\-0-9]*[a-z0-9])?$"
+          format: "/^[a-z](?:[a-z\\-0-9]*[a-z0-9])?$/"
           description: The subdomain desired for this mock. NB. this will overwrite an existing one of the same name.
           required: true
         - in: formData
