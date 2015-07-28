@@ -50,7 +50,7 @@ module Blinkbox
           end
 
           raise ArgumentError, "swagger_store must be a folder or a swagger file" unless File.exist?(store)
-          raise ArgumentError, "The specified file is not a swagger 2.0 file" if valid_swagger?(ENV['SWAGGERIFIC_SINGLE_SERVICE'])
+          raise ArgumentError, "The specified file is not a swagger 2.0 file" unless valid_swagger?(ENV['SWAGGERIFIC_SINGLE_SERVICE'])
           @@swagger_store = store
         end
 
