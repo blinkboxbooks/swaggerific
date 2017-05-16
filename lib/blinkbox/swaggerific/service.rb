@@ -137,6 +137,7 @@ module Blinkbox
       end
 
       def create_example(env, route)
+        p route
         (route['schema']['definitions'] ||= {}).merge!(@spec['definitions']) if @spec['definitions']
         sources = [
           ExamplesExampler.from_examples(route['examples']),
